@@ -113,7 +113,8 @@ class Home(ctk.CTkScrollableFrame):
             
             for category in categories:
                 amount = data_helpers.calc_amount(config.get_current_user_id(), 'expense', category, current_month)
-                label = ctk.CTkLabel(self.categories_frame, text=config.choosed_lang["expenses_categories"][category.lower()], font=("Roboto", 18))
+                cat_name = db.get_category_name(category, config.get_current_lang())
+                label = ctk.CTkLabel(self.categories_frame, text=cat_name, font=("Roboto", 18))
                 label.grid(row=row, column=col)
                 amount_label = ctk.CTkLabel(self.categories_frame, text=str(amount), font=("Roboto", 18))
                 amount_label.grid(row=row, column=1, padx=10)

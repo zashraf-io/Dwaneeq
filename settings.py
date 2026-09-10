@@ -121,20 +121,14 @@ class Settings(customtkinter.CTkFrame):
             self.remember_var = customtkinter.BooleanVar(self, False)
 
         self.remember_checkbox = customtkinter.CTkCheckBox(self, variable=self.remember_var, onvalue=True, offvalue=False,
-                                                            # fg_color=config.choosed_colors["checkbox_fg_color"],
-                                                            # hover_color=config.choosed_colors["checkbox_hover_color"],
-                                                            # border_color=config.choosed_colors["checkbox_border_color"],
-                                                            # checkmark_color=config.choosed_colors["checkbox_checkmark_color"],
                                                             command=self.remember_checkbox_assign, text=config.choosed_lang["remember_login"])
         self.remember_checkbox.grid(row=8)
 
-        self.account_lbl = customtkinter.CTkLabel(self, text=config.choosed_lang["account"], font=("Arial", 22, "bold"))
+        self.account_lbl = customtkinter.CTkLabel(self, text=ar.reshape(config.choosed_lang["account"]) if config.lang_name=="ar" else config.choosed_lang["account"],
+        font=("Arial", 22, "bold"))
         self.account_lbl.grid(row=9)
 
         self.change_pass_btn = customtkinter.CTkButton(self, text=config.choosed_lang["change_password"],
-                                                    # fg_color=config.choosed_colors["sidebar_btn"],
-                                                    # hover_color=config.choosed_colors["button_hover_color"],
-                                                    # border_color=config.choosed_colors["button_border_color"],
                                                     command=self.open_change_password_frame)
         self.change_pass_btn.grid(row=10, sticky="W", padx=50)
 

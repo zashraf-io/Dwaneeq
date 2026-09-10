@@ -116,8 +116,10 @@ class TakeBudget(customtkinter.CTkFrame):
             else:
                 self.budget_checkbox.deselect()
 
-            for category, amount in categories_data:
-                self.add_category(category, amount)
+            for item in categories_data:
+                cat_id = item[0]
+                amount = item[2]
+                self.add_category(cat_id, amount)
 
 
     def add_category(self, category=None, amount=None):
@@ -214,7 +216,9 @@ class TakeBudget(customtkinter.CTkFrame):
             db.delete_category_budget(budget_id)
 
         for frame in self.categories_budget_set:
-            db.add_category_budget(budget_id, self.categories_budget_set[frame][0].get_category(), self.categories_budget_set[frame][1].get())
+            cat_id = self.categories_budget_set[frame][0].get_category_id()
+            if cat_id is not None:
+                db.add_category_budget(budget_id, cat_id, float(self.categories_budget_set[frame][1].get()))
 
         self.master.master.master.clear_frame("destroy")
         self.master.master.master.open_side_bar()
@@ -306,11 +310,14 @@ class Budget(customtkinter.CTkScrollableFrame):
                 self.category_budget_not_set_note = customtkinter.CTkLabel(self.budget_overview_frame, text=config.choosed_lang["category_budget_not_set_note"])
                 self.category_budget_not_set_note.grid(row=row, column=0, columnspan=2)
             else:
-                for category, budget in category_budgets:
-                    self.category = customtkinter.CTkLabel(self.budget_overview_frame, font=("Arial", 16, "bold"), text=config.choosed_lang["expenses_categories"][category.lower()])
+                for item in category_budgets:
+                    cat_id = item[0]
+                    cat_name = item[1]
+                    b_amount = item[2]
+                    self.category = customtkinter.CTkLabel(self.budget_overview_frame, font=("Arial", 16, "bold"), text=cat_name)
                     self.category.grid(row=row, column=col_align["total_budget_lbl"]["column"])
 
-                    self.category_budget = customtkinter.CTkLabel(self.budget_overview_frame, font=("Arial", 16), text=data_helpers.from_to(budget, budget_currency, config.currency))
+                    self.category_budget = customtkinter.CTkLabel(self.budget_overview_frame, font=("Arial", 16), text=data_helpers.from_to(b_amount, budget_currency, config.currency))
                     self.category_budget.grid(row=row, column=col_align["total_budget_amount"]["column"], sticky=col_align["currency"]["sticky"])
 
                     self.currency = customtkinter.CTkLabel(self.budget_overview_frame, font=("Arial", 16), text=currency)
@@ -358,15 +365,19 @@ class Budget(customtkinter.CTkScrollableFrame):
         if budget_info != "no budget":
             if category_budgets:
                 row = 0
-                for category, category_budget in category_budgets:
-                    spent = data_helpers.calc_amount(config.get_current_user_id(), 'expense', category)
-                    spent_percent = spent / data_helpers.from_to(category_budget, budget_currency, config.currency)
+                for item in category_budgets:
+                    cat_id = item[0]
+                    cat_name = item[1]
+                    cat_budget = item[2]
+                    spent = data_helpers.calc_amount(config.get_current_user_id(), 'expense', cat_id)
+                    budget_in_curr = data_helpers.from_to(cat_budget, budget_currency, config.currency)
+                    spent_percent = spent / budget_in_curr if budget_in_curr > 0 else 0
 
-                    self.category = customtkinter.CTkLabel(self.mini_stats_frame, font=("Arial", 16, "bold"), text=config.choosed_lang["expenses_categories"][category.lower()])
+                    self.category = customtkinter.CTkLabel(self.mini_stats_frame, font=("Arial", 16, "bold"), text=cat_name)
                     self.category.grid(row=row, padx=10, column=col_align["total_budget_lbl"]["column"])
 
                     self.category_progress_bar = customtkinter.CTkProgressBar(self.mini_stats_frame)
-                    self.category_progress_bar.set(spent_percent)
+                    self.category_progress_bar.set(min(1.0, spent_percent))
 
                     self.category_progress_bar.grid(row=row, column=col_align["total_budget_amount"]["column"], sticky=col_align["currency"]["sticky"])
 

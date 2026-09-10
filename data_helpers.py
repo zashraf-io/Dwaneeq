@@ -36,12 +36,15 @@ def get_total_budget(user_id, budget_id="latest") -> float | str:
 
     return from_to(total_budget, currency, config.currency)
 
-def calc_amount(user_id, type, category:str="all", month: str="now"):
+def calc_amount(user_id, type, category_id=None, month: str="now"):
     "month can be ['now', 'all'] or date formated as 'YYYY-mm'"
     if month == "now":
         month = datetime.datetime.now().strftime(r"%Y-%m")
 
-    amounts = db.get_amount(user_id, type, category, month)
+    if category_id == "all" or category_id == "":
+        category_id = None
+
+    amounts = db.get_amount(user_id, type, category_id, month)
     sum = amounts[0]
     if sum == None:
         sum = 0.0

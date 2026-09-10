@@ -4,6 +4,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import arabic_reshaper as ar
 import config
 import data_helpers
 import db
@@ -64,8 +65,10 @@ class Stats(ctk.CTkFrame):
         # Income VS Expense barchart
         months = db.get_months(config.get_current_user_id())
         x = np.arange(len(db.get_months(config.get_current_user_id())))
+
         incomes = [data_helpers.calc_amount(config.get_current_user_id(), 'income', month=month) for month in months]
         expenses = [data_helpers.calc_amount(config.get_current_user_id(), 'expense', month=month) for month in months]
+
         width=0.35
 
         self.c_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
@@ -73,8 +76,8 @@ class Stats(ctk.CTkFrame):
 
         fig, ax = plt.subplots(figsize=(5, 5), layout='constrained')
         fig.set_facecolor(self.cget('fg_color')[self.c_idx])
-        income_bar = ax.bar(x - width/2, incomes, label="incomes", width=width, edgecolor="white", linewidth=0.7, color="green")
-        expense_bar = ax.bar(x + width/2, expenses, label= "expense", width=width, edgecolor="white", linewidth=0.7, color="red")
+        income_bar = ax.bar(x - width/2, incomes, label=config.choosed_lang["bar_chart_labels"]["income"], width=width, edgecolor="white", linewidth=0.7, color="green")
+        expense_bar = ax.bar(x + width/2, expenses, label=config.choosed_lang["bar_chart_labels"]["expenses"], width=width, edgecolor="white", linewidth=0.7, color="red")
         ax.bar_label(income_bar, padding=3, color=self.tex_c, labels=[f"{int(v.get_height())}" for v in income_bar])
         ax.bar_label(expense_bar, padding=3, color=self.tex_c, labels=[f"{int(v.get_height())}" for v in expense_bar])
         ax.set_xticks(x, months)
@@ -112,7 +115,11 @@ class Stats(ctk.CTkFrame):
 
         fig, ax = plt.subplots()
 
-        ax.pie(amounts, autopct="%1.1f%%", labels=[config.choosed_lang['expenses_categories'][category.lower()] for category in categories],
+        if config.lang_name == "ar":
+            cat_labels = [ar.reshape(db.get_category_name(category, 'ar')) for category in categories]
+        else:
+            cat_labels = [db.get_category_name(category, 'en') for category in categories]
+        ax.pie(amounts, autopct="%1.1f%%", labels=cat_labels,
                                             textprops={'color':self.tex_c})
         ax.set_title(config.choosed_lang["piechart_categories_title"], {'color':self.tex_c})
         fig.set_facecolor(self.cget('fg_color')[self.c_idx])

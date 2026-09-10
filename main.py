@@ -4,7 +4,7 @@ import datetime; from dateutil.relativedelta import relativedelta
 from settings import Settings; from login_signup import Login_Sinup; from addtransaction import Transaction; from home import Home
 from history import History; from stats import Stats; from budget import Budget; from currency_calculator import CurrencyCalculator
 import config; from config import resource_path; import db; import some_classes
-import os, sys
+import os, sys, threading
 
 # setting the current working directory to the script directory to use relative paths safely
 app_dir = os.path.dirname(os.path.abspath(__file__))
@@ -90,25 +90,32 @@ class App(customtkinter.CTk):
         self.loaded_windows = {}
 
 
+        # Background currency update once a day when app opens
+        threading.Thread(target=self.background_currency_update, daemon=True).start()
+
         if db.isfound_remembered():
             user_id = db.isfound_remembered()
             self.load_app(user_id)
         else:
             self.open_login_window()
 
+    def background_currency_update(self):
+        try:
+            db.update_currencies_rates()
+        except Exception as e:
+            print(f"Background currency update error: {e}")
+
     def load_app(self, user_id):
         config.set_current_user_id(user_id)
         try:
             self.get_saved_settings(user_id)
             self.update_auto_budget()               
-            self.update_currencies()
             self.open_side_bar()
             self.open_home()
         except:
             db.open_database("all")
             self.get_saved_settings(user_id)
             self.update_auto_budget()               
-            self.update_currencies()
             self.open_side_bar()
             self.open_home()
 
@@ -202,6 +209,7 @@ class App(customtkinter.CTk):
         """opens the login window"""
         if hasattr(self, "login_window"):
             self.login_window.destroy()
+        config.set_lang("ar")
         customtkinter.set_appearance_mode(config.choosed_mode)
         self.login_window = Login_Sinup(self)
         self.login_window.pack(fill="both", expand=True)
@@ -225,17 +233,23 @@ class App(customtkinter.CTk):
 
             self.home.grid(row=0, column=0, sticky="NSEW")
         
-    def open_expense(self):
+    def open_expense(self, edit_data=None):
         """"""
         self.clear_frame()
 
-        if "expense" in self.loaded_windows.keys():
+        if edit_data is not None:
+            if "expense" in self.loaded_windows.keys():
+                self.loaded_windows["expense"].destroy()
+                del self.loaded_windows["expense"]
+            self.expense = Transaction(self, edit_data=edit_data)
+            self.loaded_windows["expense"] = self.expense
+            self.expense.grid(row=0, column=0, sticky="NSEW")
+        elif "expense" in self.loaded_windows.keys():
             self.loaded_windows["expense"].grid(row=0, column=0, sticky="NSEW")
         else:
             self.expense = Transaction(self)
             self.loaded_windows.update({"expense" : self.expense})
-            
-            self.expense.grid(row=0, column=0,sticky="NSEW")
+            self.expense.grid(row=0, column=0, sticky="NSEW")
         
         self.sidebar.disable_choosed(self.sidebar.expense_btn)
 

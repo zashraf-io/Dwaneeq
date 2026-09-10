@@ -127,47 +127,49 @@ class CategoryMenu(customtkinter.CTkOptionMenu):
     def __init__(self, master, width=80, add_all: bool=False, type: str="all"):
         super().__init__(master)
         self.type = type
-        values = [config.choosed_lang["all"]] if add_all else []
+        self.add_all = add_all
+        self.category_map = {}
+        self.configure(width=width)
+        self.refresh()
 
-        if type == "income":
-            values.extend(config.choosed_lang["income_categories"].values())
-        elif type == "expense":
-            values.extend(config.choosed_lang["expenses_categories"].values())
+    def refresh(self):
+        import db
+        values = []
+        self.category_map = {}
+        if self.add_all:
+            all_text = config.choosed_lang.get("all", "All")
+            values.append(all_text)
+            self.category_map[all_text] = None
+
+        lang = config.get_current_lang()
+        user_id = config.get_current_user_id()
+        if self.type in ["income", "expense"]:
+            cats = db.get_categories(self.type, lang, user_id)
         else:
-            values.extend(config.choosed_lang["income_categories"].values())
-            values.extend(config.choosed_lang["expenses_categories"].values())
+            cats = db.get_categories("income", lang, user_id) + db.get_categories("expense", lang, user_id)
 
-        self.configure(
-            width = width,
-            values = values
-        )
+        for cat_id, name in cats:
+            values.append(name)
+            self.category_map[name] = cat_id
+
+        if not values:
+            values = [""]
+
+        self.configure(values=values)
         self.set(values[0])
 
+    def get_category_id(self):
+        return self.category_map.get(self.get(), None)
 
     def get_category(self):
-        "get the english velue of the category option menu even if the appearing values are arabic to be dealed with in the logic"
-        if config.lang_name == "en":
-            return "" if self.get() == "all" else self.get()
-
-        trans_type = self.type
-        try:
-            categories_en = list(config.LANG["en"][trans_type+"_categories"].values())
-            categories = list(config.choosed_lang[trans_type+"_categories"].values())
-        except:
-            categories_en = list(config.LANG["en"][trans_type+"s_categories"].values())
-            categories = list(config.choosed_lang[trans_type+"s_categories"].values())
-
-        try:
-            index = categories.index(self.get())
-            return categories_en[index]
-        except:
-            return ""
+        cid = self.get_category_id()
+        return "" if cid is None else cid
 
     def set_value(self, value):
-        if config.lang_name == "ar":
-            value = config.choosed_lang["expenses_categories"][value.lower()]
-        
-        self.set(value)
+        for name, cid in self.category_map.items():
+            if str(cid) == str(value) or name == str(value):
+                self.set(name)
+                return
 
 class PopUpMessage(tkinter.Toplevel):
     def __init__(self, master, message: str, button_name: str="OK", cancel_btn: bool=False, force=False, command=None, cancel_command=None):
